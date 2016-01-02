@@ -44,13 +44,13 @@ __global__ void KMP(char* pattern, char* target,int f[],int c[])
             if (k == m)
             {
                 c[blockIdx.x] = i-m;
-                return 0;
+                exit(0);
             }
         }
         else
             k = f[k];
     }
-    return 0;
+    exit(0);
 }
  
 int main(int argc, char* argv[])
@@ -62,7 +62,8 @@ int main(int argc, char* argv[])
     char pat[S];
     char *d_tar;
     char *d_pat;
-    ifstream f1,f2;
+    ifstream f1;
+    ofstream f2;
     f1.open(argv[0]);
     f2.open("output.txt");
 
