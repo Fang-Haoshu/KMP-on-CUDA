@@ -23,9 +23,8 @@ void preKMP(char* pattern, int f[])
 }
  
 //check whether target string contains pattern 
-__global__ void KMP(char* pattern, char* target,int f[],int c[])
+__global__ void KMP(char* pattern, char* target,int f[],int c[],int m)
 {
-    int m = strlen(pattern);
 
     int i = 1000 * blockIdx.x;
     int n = 1000 * (blockIdx.x + 2);
@@ -44,13 +43,13 @@ __global__ void KMP(char* pattern, char* target,int f[],int c[])
             if (k == m)
             {
                 c[blockIdx.x] = i-m;
-                exit(0);
+                return;
             }
         }
         else
             k = f[k];
     }
-    exit(0);
+    return;
 }
  
 int main(int argc, char* argv[])
@@ -70,6 +69,7 @@ int main(int argc, char* argv[])
     f1>>tar>>pat;
 
     int m = strlen(tar);
+    int n = strlen(pat);
     int f[m];
     int c[N];
     int *d_f;
@@ -89,7 +89,7 @@ int main(int argc, char* argv[])
     cudaMemcpy(d_pat, pat, S, cudaMemcpyHostToDevice);
     cudaMemcpy(d_f, f, m, cudaMemcpyHostToDevice);
     cudaMemcpy(d_c, c, N, cudaMemcpyHostToDevice);
-    KMP<<<N,1>>>(d_pat, d_tar ,d_f, d_c);
+    KMP<<<N,1>>>(d_pat, d_tar ,d_f, d_c, n);
 
     cudaMemcpy(c, d_c, N, cudaMemcpyDeviceToHost);
 
