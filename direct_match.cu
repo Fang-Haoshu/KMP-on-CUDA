@@ -29,7 +29,7 @@ __global__ void strMatch(char* pattern, char* target,int c[],int n, int m)
 int main(int argc, char* argv[])
 {
     const int L = 40000000;
-    const int S = 4000;
+    const int S = 40000000;
     const int N = 40000;// num of blocks
     const int M = 1024;//num of threads
 
