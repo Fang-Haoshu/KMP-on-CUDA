@@ -23,15 +23,13 @@ void preKMP(char* pattern, int f[])
 }
  
 //check whether target string contains pattern 
-__global__ void KMP(char* pattern, char* target,int f[],int c[],int n, int m)
+__global__ void KMP(char* pattern, char* target,int f[],int c[],int m)
 {
-    int index = blockIdx.x*blockDim.x + threadIdx.x;
-    if(index > m-n)
-        return;
-    int i = index;
-    int j = index + n;
+
+    int i = m * blockIdx.x;
+    int n = m * (blockIdx.x + 2)-1;
     int k = 0;        
-    while (i < j)
+    while (i < n)
     {
         if (k == -1)
         {
@@ -42,9 +40,10 @@ __global__ void KMP(char* pattern, char* target,int f[],int c[],int n, int m)
         {
             i++;
             k++;
-            if (k == n)
+            if (k == m)
             {
-                c[i - n] = i-n;
+                c[i - m] = i-m;
+                i = i -k + 1;
             }
         }
         else
@@ -56,9 +55,8 @@ __global__ void KMP(char* pattern, char* target,int f[],int c[],int n, int m)
 int main(int argc, char* argv[])
 {
     const int L = 40000000;
-    const int S = 4000;
+    const int S = 40000000;
     const int N = 40000;// num of blocks
-    const int M = 1024;//num of threads
 
     int cSize = 4;//size of char is 1, but size of 'a' is 4
 
@@ -66,7 +64,8 @@ int main(int argc, char* argv[])
     char *pat;
     tar = (char*)malloc(L*cSize);
     pat = (char*)malloc(S*cSize);
-
+    char *d_tar;
+    char *d_pat;
     ifstream f1;
     ofstream f2;
 
@@ -79,20 +78,18 @@ int main(int argc, char* argv[])
     int n = strlen(pat);
     int *f;
     int *c;
+    printf("5\n");
     f = new int[m];
     c = new int[m];
+    printf("6\n");
+    int *d_f;
+    int *d_c;
     for(int i = 0;i<m; i++)
     {
         c[i] = -1;
-    }   
-
+    }     
     preKMP(pat, f);
-
-    char *d_tar;
-    char *d_pat;
-    int *d_f;
-    int *d_c;
-
+    printf("6\n");
     cudaMalloc((void **)&d_tar, m*cSize);
     cudaMalloc((void **)&d_pat, n*cSize);
     cudaMalloc((void **)&d_f, m*cSize);
@@ -102,8 +99,8 @@ int main(int argc, char* argv[])
     cudaMemcpy(d_pat, pat, n*cSize, cudaMemcpyHostToDevice);
     cudaMemcpy(d_f, f, m*cSize, cudaMemcpyHostToDevice);
     cudaMemcpy(d_c, c, m*cSize, cudaMemcpyHostToDevice);
-
-    KMP<<<(m+M-1)/M,M>>>(d_pat, d_tar ,d_f, d_c, n, m);
+    printf("6\n");
+    KMP<<<m/n,1>>>(d_pat, d_tar ,d_f, d_c, n);
 
     cudaMemcpy(c, d_c, m*cSize, cudaMemcpyDeviceToHost);
 
