@@ -2,9 +2,9 @@
 #include <cstring>
 #include <fstream>
 using namespace std;
-void preKMP(string pattern, int f[])
+void preKMP(char* pattern, int f[])
 {
-    int m = pattern.length(), k;
+    int m = strlen(pattern), k;
     f[0] = -1;
     for (int i = 1; i < m; i++)
     {
@@ -21,10 +21,10 @@ void preKMP(string pattern, int f[])
 }
  
 //check whether target string contains pattern 
-bool KMP(string pattern, string target,int f[])
+void KMP(char* pattern, char* target,int f[], int c[])
 {
-    int m = pattern.length();
-    int n = target.length();
+    int m = strlen(pattern);
+    int n = strlen(target);
          
     int i = 0;
     int k = 0;        
@@ -40,31 +40,59 @@ bool KMP(string pattern, string target,int f[])
             i++;
             k++;
             if (k == m)
-                return 1;
+                {
+                    c[i-m] = i-m;
+                     i = i - k + 1;
+
+                }
         }
         else
             k = f[k];
     }
-    return 0;
+    return ;
 }
  
 int main(int argc, char* argv[])
 {
+    const int L = 40000000;
+    const int S = 40000000;
     ifstream f1;
+    ofstream fout;
     f1.open(argv[1]);
     fout.open("output.txt");
-    string tar,pat;
-    f1>>tar>>pat;
-    
+    int cSize = 4;//size of char is 1, but size of 'a' is 4
 
-    int m = pat.length();
-    int f[m];     
+    char *tar;
+    char *pat; 
+    tar = new char[L];
+    pat = new char[S];
+    
+    f1>>tar>>pat;
+
+    int m = strlen(tar);
+    int n = strlen(pat);
+    printf("%d %d\n",m,n);
+    int *f;
+    int *c;
+    f = new int[m];
+    c = new int[m];
+    for(int i = 0;i<m; i++)
+    {
+        c[i] = -1;
+    }     
+
     preKMP(pat, f);
 
-    if (KMP(pat, tar,f))
-        fout<<"'"<<pat<<"' found in string '"<<tar<<"'"<<endl;
-    else
-        fout<<"'"<<pat<<"' not found in string '"<<tar<<"'"<<endl;
+    KMP(pat, tar,f,c);
+    
+    for(int i = 0;i<m; i++)
+    { 
+        if(c[i]!=-1)
+        {
+
+            fout<<i<<' '<<c[i]<<'\n';
+        }
+    }
 
     return 0;
 }
