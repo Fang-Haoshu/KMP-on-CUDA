@@ -50,9 +50,9 @@ bool KMP(string pattern, string target,int f[])
  
 int main(int argc, char* argv[])
 {
-    ifstream f1,f2;
-    f1.open(argv[0]);
-    fout.open(argv[1]);
+    ifstream f1;
+    f1.open(argv[1]);
+    fout.open("output.txt");
     string tar,pat;
     f1>>tar>>pat;
     
