@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstring>
 #include <fstream>
+#include "time.h"
 
 using namespace std;
 
@@ -23,13 +24,17 @@ void preKMP(char* pattern, int f[])
 }
  
 //check whether target string contains pattern 
-__global__ void KMP(char* pattern, char* target,int f[],int c[],int m)
+__global__ void KMP(char* pattern, char* target,int f[],int c[],int n, int m)
 {
-
-    int i = m * blockIdx.x;
-    int n = m * (blockIdx.x + 2)-1;
+    int index = blockIdx.x*blockDim.x + threadIdx.x;
+    int i = n * index;
+    int j = n * (index + 2)-1;
+    if(i>m)
+        return;
+    if(j>m)
+        j=m;
     int k = 0;        
-    while (i < n)
+    while (i < j)
     {
         if (k == -1)
         {
@@ -40,10 +45,10 @@ __global__ void KMP(char* pattern, char* target,int f[],int c[],int m)
         {
             i++;
             k++;
-            if (k == m)
+            if (k == n)
             {
-                c[i - m] = i-m;
-                i = i -k + 1;
+                c[i - n] = i-n;
+                i = i - k + 1;
             }
         }
         else
@@ -56,7 +61,7 @@ int main(int argc, char* argv[])
 {
     const int L = 40000000;
     const int S = 40000000;
-    const int N = 40000;// num of blocks
+    int M = 1024;//num of threads
 
     int cSize = 4;//size of char is 1, but size of 'a' is 4
 
@@ -76,12 +81,13 @@ int main(int argc, char* argv[])
 
     int m = strlen(tar);
     int n = strlen(pat);
+    printf("%d %d\n",m,n);
     int *f;
     int *c;
-    printf("5\n");
+
     f = new int[m];
     c = new int[m];
-    printf("6\n");
+
     int *d_f;
     int *d_c;
     for(int i = 0;i<m; i++)
@@ -89,7 +95,9 @@ int main(int argc, char* argv[])
         c[i] = -1;
     }     
     preKMP(pat, f);
-    printf("6\n");
+    printf("----Start copying data to GPU----\n");
+    time_t rawtime1;
+    time ( &rawtime1 );
     cudaMalloc((void **)&d_tar, m*cSize);
     cudaMalloc((void **)&d_pat, n*cSize);
     cudaMalloc((void **)&d_f, m*cSize);
@@ -99,9 +107,14 @@ int main(int argc, char* argv[])
     cudaMemcpy(d_pat, pat, n*cSize, cudaMemcpyHostToDevice);
     cudaMemcpy(d_f, f, m*cSize, cudaMemcpyHostToDevice);
     cudaMemcpy(d_c, c, m*cSize, cudaMemcpyHostToDevice);
-    printf("6\n");
-    KMP<<<m/n,1>>>(d_pat, d_tar ,d_f, d_c, n);
+    time_t rawtime2;
+    time ( &rawtime2 );
+    printf("----Data copied to GPU successfully---- Takes %f seconds\n", difftime(rawtime2,rawtime1));
+    if(n>10000000)
+        M = 128;
+    KMP<<<(m/n+M)/M,M>>>(d_pat, d_tar ,d_f, d_c, n, m);
 
+    
     cudaMemcpy(c, d_c, m*cSize, cudaMemcpyDeviceToHost);
 
     for(int i = 0;i<m; i++)
@@ -111,7 +124,9 @@ int main(int argc, char* argv[])
             f2<<i<<' '<<c[i]<<'\n';
         }
     }
-
+    time_t rawtime4;
+    time ( &rawtime4 );
+    printf("----Task done---- Takes %f seconds in total\n", difftime(rawtime4,rawtime1));
     cudaFree(d_tar); cudaFree(d_pat); cudaFree(d_f); cudaFree(d_c);
     return 0;
 }
