@@ -26,8 +26,8 @@ void preKMP(char* pattern, int f[])
 __global__ void KMP(char* pattern, char* target,int f[],int c[],int m)
 {
 
-    int i = 1000 * blockIdx.x;
-    int n = 1000 * (blockIdx.x + 2);
+    int i = m * blockIdx.x;
+    int n = m * (blockIdx.x + 2)-1;
     int k = 0;        
     while (i < n)
     {
@@ -42,8 +42,7 @@ __global__ void KMP(char* pattern, char* target,int f[],int c[],int m)
             k++;
             if (k == m)
             {
-                c[blockIdx.x] = i-m;
-                return;
+                c[i - m] = i-m;
             }
         }
         else
@@ -57,47 +56,58 @@ int main(int argc, char* argv[])
     const int L = 40000000;
     const int S = 4000;
     const int N = 40000;// num of blocks
-    char tar[L];
-    char pat[S];
+
+    int cSize = 4;//size of char is 1, but size of 'a' is 4
+
+    char *tar;
+    char *pat;
+    tar = (char*)malloc(L*cSize);
+    pat = (char*)malloc(S*cSize);
     char *d_tar;
     char *d_pat;
     ifstream f1;
     ofstream f2;
-    f1.open(argv[0]);
+
+    f1.open(argv[1]);
     f2.open("output.txt");
 
     f1>>tar>>pat;
 
     int m = strlen(tar);
     int n = strlen(pat);
-    int f[m];
-    int c[N];
+    int *f;
+    int *c;
+    printf("5\n");
+    f = new int[m];
+    c = new int[m];
+    printf("6\n");
     int *d_f;
     int *d_c;
-    for(int i = 0;i<N; i++)
+    for(int i = 0;i<m; i++)
     {
         c[i] = -1;
     }     
     preKMP(pat, f);
+    printf("6\n");
+    cudaMalloc((void **)&d_tar, m*cSize);
+    cudaMalloc((void **)&d_pat, n*cSize);
+    cudaMalloc((void **)&d_f, m*cSize);
+    cudaMalloc((void **)&d_c, m*cSize);
 
-    cudaMalloc((void **)&d_tar, L);
-    cudaMalloc((void **)&d_pat, S);
-    cudaMalloc((void **)&d_f, m);
-    cudaMalloc((void **)&d_c, N);
+    cudaMemcpy(d_tar, tar, m*cSize, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_pat, pat, n*cSize, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_f, f, m*cSize, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_c, c, m*cSize, cudaMemcpyHostToDevice);
+    printf("6\n");
+    KMP<<<m/n,1>>>(d_pat, d_tar ,d_f, d_c, n);
 
-    cudaMemcpy(d_tar, tar, L, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_pat, pat, S, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_f, f, m, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_c, c, N, cudaMemcpyHostToDevice);
-    KMP<<<N,1>>>(d_pat, d_tar ,d_f, d_c, n);
+    cudaMemcpy(c, d_c, m*cSize, cudaMemcpyDeviceToHost);
 
-    cudaMemcpy(c, d_c, N, cudaMemcpyDeviceToHost);
-
-    for(int i = 0;i<N; i++)
-    {
+    for(int i = 0;i<m; i++)
+    { 
         if(c[i]!=-1)
         {
-            f2<<c[i]<<'\n';
+            f2<<i<<' '<<c[i]<<'\n';
         }
     }
 
