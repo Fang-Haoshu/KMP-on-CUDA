@@ -6,12 +6,10 @@ using namespace std;
 
  
 //check whether target string contains pattern 
-__global__ void strMatch(char* pattern, char* target,int c[],int n, int m)
+void strMatch(char* pattern, char* target,int c[],int n, int m)
 {
-    int index = blockIdx.x*blockDim.x + threadIdx.x;
-    if(index > m-n)
-        return;
-    int i = index;
+    for(int i = 0;i<m-n;i++)
+    {
     int k = 0;        
     while (k < n)
     {
@@ -20,9 +18,10 @@ __global__ void strMatch(char* pattern, char* target,int c[],int n, int m)
             k++;
         }
         else
-           return;
+           continue;
     }
     c[i] = i;
+    }
     return;
 }
  
@@ -37,8 +36,8 @@ int main(int argc, char* argv[])
 
     char *tar;
     char *pat;
-    tar = (char*)malloc(L*cSize);
-    pat = (char*)malloc(S*cSize);
+    tar = new char[L];
+    pat = new char[S];
 
     ifstream f1;
     ofstream f2;
@@ -57,21 +56,12 @@ int main(int argc, char* argv[])
         c[i] = -1;
     }   
 
-    char *d_tar;
-    char *d_pat;
-    int *d_c;
+    clock_t start,end;
+    start = clock();
+    strMatch(pat, tar,c, n, m);
+    end = clock();
 
-    cudaMalloc((void **)&d_tar, m*cSize);
-    cudaMalloc((void **)&d_pat, n*cSize);
-    cudaMalloc((void **)&d_c, m*cSize);
-
-    cudaMemcpy(d_tar, tar, m*cSize, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_pat, pat, n*cSize, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_c, c, m*cSize, cudaMemcpyHostToDevice);
-
-    strMatch<<<(m+M-1)/M,M>>>(d_pat, d_tar , d_c, n, m);
-
-    cudaMemcpy(c, d_c, m*cSize, cudaMemcpyDeviceToHost);
+    printf("----String matching done---- Takes %f s\n", (end - start)/1000);  
 
     for(int i = 0;i<m; i++)
     { 
@@ -80,7 +70,6 @@ int main(int argc, char* argv[])
             f2<<i<<' '<<c[i]<<'\n';
         }
     }
-
-    cudaFree(d_tar); cudaFree(d_pat);  cudaFree(d_c);
+    
     return 0;
 }
