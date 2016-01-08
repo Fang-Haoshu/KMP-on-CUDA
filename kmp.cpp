@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstring>
 #include <fstream>
+#include <time.h>
 using namespace std;
 void preKMP(char* pattern, int f[])
 {
@@ -81,10 +82,15 @@ int main(int argc, char* argv[])
         c[i] = -1;
     }     
 
-    preKMP(pat, f);
+    clock_t start,end;
+    start = clock();
 
+    preKMP(pat, f);
     KMP(pat, tar,f,c);
     
+    end = clock();
+    printf("----String matching done---- Takes %f ms\n", (end - start) );  
+
     for(int i = 0;i<m; i++)
     { 
         if(c[i]!=-1)
