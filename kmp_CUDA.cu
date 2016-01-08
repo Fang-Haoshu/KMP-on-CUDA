@@ -112,8 +112,23 @@ int main(int argc, char* argv[])
     printf("----Data copied to GPU successfully---- Takes %f seconds\n", difftime(rawtime2,rawtime1));
     if(n>10000000)
         M = 128;
-    KMP<<<(m/n+M)/M,M>>>(d_pat, d_tar ,d_f, d_c, n, m);
 
+//使用event计算时间
+    float time_elapsed=0;
+    cudaEvent_t start,stop;
+    cudaEventCreate(&start);    //创建Event
+    cudaEventCreate(&stop);
+
+    cudaEventRecord( start,0);    //记录当前时间
+    KMP<<<(m/n+M)/M,M>>>(d_pat, d_tar ,d_f, d_c, n, m);
+    cudaEventRecord( stop,0);    //记录当前时间
+ 
+    cudaEventSynchronize(start);    //Waits for an event to complete.
+    cudaEventSynchronize(stop);    //Waits for an event to complete.Record之前的任务
+    cudaEventElapsedTime(&time_elapsed,start,stop);    //计算时间差
+
+
+    printf("----String matching done---- Takes %f s\n", time_elapsed/1000);  
     
     cudaMemcpy(c, d_c, m*cSize, cudaMemcpyDeviceToHost);
 
