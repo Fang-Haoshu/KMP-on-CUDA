@@ -1,5 +1,5 @@
 # KMP-on-CUDA
-This is the project of computer architecture in sjtu. My main target is to implement kmp algorithm on GPU.
+This is the project of computer architecture in SJTU. My main target is to implement KMP algorithm on GPU.
 And some other jobs are done by the way.
 ####direct_match.cpp
 A direct string match algorithm on CPU.
@@ -11,6 +11,7 @@ KMP algorithm on CPU.
 KMP algorithm on GPU.
 ###How to use
 for *.cpp: g++ *.cpp
+
 for *.cu: nvcc *.cu
 
 then
